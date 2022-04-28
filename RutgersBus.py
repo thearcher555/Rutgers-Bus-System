@@ -21,7 +21,16 @@ class Stop:
         self.num_buses = 0
         self.time2stops = {}
 
+def readRoutes():
+    f = open("BusRoutes.txt", "r")
+    lines = f.readlines()
+    allRoutes = []
 
-        
+    for x in lines:
+        tempLine = x.split(';')
+        tempRoute = Route(tempLine[0], )
+
+
+    return allRoutes
 
     
