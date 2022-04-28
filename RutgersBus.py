@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import tkinter as tk
 from functools import partial3
 
+# status: "AT STOP" , "IN TRANSIT", "TAKING BREAKING"
 class Bus:
     def _init__(self, num, bus_status, route):
         self.num = num
@@ -21,7 +22,7 @@ class Stop:
         self.campus = str(campus)
         self.num_buses = 0
         self.time2stops = {}
-#  "AT STOP" , "IN TRANSIT", "TAKING BREAKING"
+
 
 def readRoutes():
     f = open("BusRoutes.txt", "r")
