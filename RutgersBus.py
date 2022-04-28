@@ -21,15 +21,12 @@ class Stop:
         self.campus = str(campus)
         self.num_buses = 0
         self.time2stops = {}
-<<<<<<< HEAD
 #  "AT STOP" , "IN TRANSIT", "TAKING BREAKING"
-=======
 
 def readRoutes():
     f = open("BusRoutes.txt", "r")
     lines = f.readlines()
     allRoutes = []
->>>>>>> 9765b14cec851020d881e1c31563adda65db4997
 
     for x in lines:
         tempLine = x.split(';')
