@@ -2,7 +2,7 @@ A;College Avenue Student Center;The Yard;Student Activities Center;Stadium West 
 B;Livingston Student Center;Quads;Busch-Livingston Health Center;Hill Center (N);Science Buildings;Busch Student Center;Livingston Plaza
 EE;College Avenue Student Center;The Yard;SoCam Apartments (George St);Red Oak Lane;Lipman Hall;Biel Road;Henderson Apartments;Gibbons;College Hall;SoCam Apartments (New St);Student Activities Center
 F;Red Oak Lane;Lipman Hall;Henderson Apartments;Gibbons;College Hall;Student Activities Center;College Avenue Student Center;The Yard
-H;College Avenue Student Center;The Yard;Student Activities Center;Werblin Recreation Center;Allison Road Classroom Building;Hill Center (S);Stadium West Lot
+H;College Avenue Student Center;The Yard;Student Activities Center;Werblin Recreation Center;Busch Student Center;Allison Road Classroom Building;Hill Center (S);Stadium West Lot
 LX;College Avenue Student Center;The Yard;Student Activities Center;Livingston Plaza;Livingston Student Center;Quads
 REXB;Red Oak Lane;Lipman Hall;College Hall;Hill Center (N);Allison Road Classroom Building;Hill Center (S)
 REXL;Red Oak Lane;Lipman Hall;College Hall;Livingston Plaza;Livingston Student Center

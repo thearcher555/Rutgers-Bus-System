@@ -70,10 +70,68 @@ def readRoutes(allStops = []):
                            
         allRoutes.append(tempRoute)
     
+    # DOUBLE the stops array of each route to make it easier to iterate through them later
+    for x in allRoutes:
+        length = len(x.stops)
+        for i in range(length):
+            x.stops.append(x.stops[i])
+
     return allRoutes
 
+def initDistanceMatrix():
+    global idCount
+    rows = idCount + 1
+    cols = idCount + 1
+    distanceMatrix = [[0]*rows for i in range(cols)]
+    for x in range(rows):
+        for y in range(cols):
+            distanceMatrix[x][y] = random.randrange(1,8)
+    return distanceMatrix
+
+def randomDistanceMatrix(distanceMatrix):
+    temp = distanceMatrix
+    for x in range(len(temp[0])):
+        for y in range(len(temp[0])):
+            temp[x][y] = random.randrange(1,8)
+    return temp
+
+def idToName(id, allRoutes = []):
+    return 0
+
+def nameToId(name, allRoutes = []):
+    return 0
+
+
+def findRoutes(startStop, endStop, distanceMatrix, allRoutes = []):
+    possibleStops = []
+
+    for x in allRoutes:
+        found = 0
+        print("checking " + x.name)
+        for stops in x.stops:
+            print(stops.id)
+            if stops.id == int(startStop) or stops.id == int(endStop):
+                found += 1
+        if found >= 4:
+            possibleStops.append(x.name)
+    
+    print("Possible routes: ")
+    print(possibleStops)
+
 allStops = []
-readRoutes(allStops)
+allRoutes = readRoutes(allStops)
+distanceMatrix = initDistanceMatrix()
+# print(distanceMatrix)
+# distanceMatrix = randomDistanceMatrix(distanceMatrix)
+# print("////////////////////////////")
+# print(distanceMatrix)
+
 for x in allStops:
     print("name: " + str(x.name) + "    id: " + str(x.id))
+for element in allRoutes:
+    print("STOPS IN " + element.name)
+    for x in element.stops:
+        print(x.name)
+
+findRoutes(0, 5, distanceMatrix, allRoutes)
     
