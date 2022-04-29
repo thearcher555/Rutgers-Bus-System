@@ -2,6 +2,7 @@
 from configparser import MAX_INTERPOLATION_DEPTH
 from pickle import FALSE, TRUE
 import random
+import sys
 #import numpy as np
 #import matplotlib.pyplot as plt
 #import tkinter as tk
@@ -95,15 +96,27 @@ def randomDistanceMatrix(distanceMatrix):
             temp[x][y] = random.randrange(1,8)
     return temp
 
-def idToName(id, allRoutes = []):
-    return 0
+def idToName(id, allStops = []):
+    name = ""
+    for x in allStops:
+        if x.id == int(id):
+            name = x.name
+    return name
 
-def nameToId(name, allRoutes = []):
-    return 0
+def nameToId(name, allStops = []):
+    id = 0
+    for x in allStops:
+        if x.name == name:
+            id = x.id
+    return id
 
+def returnRoute(name, allRoutes = []):
+    for x in allRoutes:
+        if x.name == name:
+            return x
 
 def findRoutes(startStop, endStop, distanceMatrix, allRoutes = []):
-    possibleStops = []
+    possibleRoutes = []
 
     for x in allRoutes:
         found = 0
@@ -113,10 +126,33 @@ def findRoutes(startStop, endStop, distanceMatrix, allRoutes = []):
             if stops.id == int(startStop) or stops.id == int(endStop):
                 found += 1
         if found >= 4:
-            possibleStops.append(x.name)
+            possibleRoutes.append(x.name)
     
     print("Possible routes: ")
-    print(possibleStops)
+    print(possibleRoutes)
+    return possibleRoutes
+
+def findBestRoute(startStop, endStop, distanceMatrix, allStops = [], allRoutes = [], possibleRoutes = []):
+    bestRoute = ""
+    estimatedTime = sys.maxint
+    for element in possibleRoutes:
+        route = returnRoute(element, allRoutes)
+        startIndex = 0
+        endIndex = 0
+
+        for x in range(len(element.stops)):
+            if element.stops[x].id == int(startStop):
+                startIndex = x
+            if element.stops[x].id == int(endStop):
+                endIndex = x
+            if startIndex != 0 and endIndex != 0:
+                break
+        
+        # need to calculate "estimated time" from distance vector here
+    
+    print("The fastest route from " + str(idToName(int(startStop), allStops)) + " to " 
+    + str(idToName(int(endStop), allStops)) + " is " + bestRoute)
+
 
 allStops = []
 allRoutes = readRoutes(allStops)
@@ -133,5 +169,8 @@ for element in allRoutes:
     for x in element.stops:
         print(x.name)
 
-findRoutes(0, 5, distanceMatrix, allRoutes)
+findRoutes(5, 8, distanceMatrix, allRoutes)
+print(idToName(6, allStops))
+print(nameToId("The Yard", allStops))
+
     
