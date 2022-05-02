@@ -1,7 +1,0 @@
-College Avenue Student Center: The Yard, 6; 
-The Yard: Student Activities Center,
-Student Activities Center: Stadium West Lot,
-Stadium West Lot: Hill Center (N), 
-Hill Center (N): Busch Student Center, 
-Busch Student Center: Weblin Recreation Center,
-Werblin Recreation Center: College Avenue Student Center, 
