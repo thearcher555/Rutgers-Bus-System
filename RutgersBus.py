@@ -11,7 +11,7 @@ import time
 
 idCount = 0
 idBus = 0
-allBusses = []
+allBuses = []
 
 # status: "S" (at a stop) , "T" (in transit), "B" (taking a break)
 class Bus:
@@ -20,8 +20,8 @@ class Bus:
         self.route = route
         self.num = num
         self.bus_status = str(bus_status)
-        global allBusses
-        allBusses.append(self)
+        global allBuses
+        allBuses.append(self)
 
     def incrementLocation(self):
         self.location += 1
@@ -117,11 +117,28 @@ def initDistanceMatrix(allRoutes = []):
 
     return distanceMatrix
 
-def randomDistanceMatrix(distanceMatrix):
+def randomDistanceMatrix(distanceMatrix, allRoutes = []):
     temp = distanceMatrix
     for x in range(len(temp[0])):
         for y in range(len(temp[0])):
             temp[x][y] = random.randrange(1,8)
+    
+    for x in allRoutes:
+        current = 0
+        index = 0
+        for i in range(int(len(x.stops)/2)):
+            
+            if i == 0:
+                x.stops[i].location = 0
+
+            else:
+                prevIndex = i - 1
+                value = distanceMatrix[x.stops[prevIndex].id][x.stops[i].id]
+                current += value
+                x.stops[i].location = current  
+            index = i
+
+        x.length = current + distanceMatrix[x.stops[index].id][x.stops[0].id]
     return temp
 
 #stop id to name
@@ -165,9 +182,6 @@ def findRoutes(startStop, endStop, distanceMatrix, allRoutes = []):
                 found += 1
         if found >= 4:
             possibleRoutes.append(x.name)
-    
-    print("Possible routes: ")
-    print(possibleRoutes)
     return possibleRoutes
 
 def progressBar():
@@ -180,8 +194,20 @@ def progressBar():
     time.sleep(1)
     print("]")
 
+def distributeBuses(num, allRoutes = []):
+    for routes in allRoutes:
+        length = routes.length
+        temp = int(length/num)
+        counter = 0
 
-def findBestRoute(startStop, endStop, distanceMatrix, allStops = [], allRoutes = []):
+        for i in range(num):
+            if counter > routes.length:
+                counter = abs(counter - routes.length)
+            routes.buses[i].location = counter
+            counter += temp
+
+# mode F -> just return how long it will take, mode P -> print information
+def findBestRoute(startStop, endStop, route, mode, distanceMatrix, allStops = [], allRoutes = []):
     bestRoute = ""
     estimatedTime = sys.maxsize
     possibleRoutes = findRoutes(startStop, endStop, distanceMatrix, allRoutes)
@@ -216,27 +242,81 @@ def findBestRoute(startStop, endStop, distanceMatrix, allStops = [], allRoutes =
             estTime += distanceMatrix[dm_x][dm_y]
             x += 1
 
-        print("Taking " + route.name + ": " + str(estTime) + " minutes")
-
         if estTime < estimatedTime:
             estimatedTime = estTime
             bestRoute = element
 
-    print("The fastest route from " + str(idToName(int(startStop), allStops)) + " to " 
-    + str(idToName(int(endStop), allStops)) + " is " + bestRoute)
+    closestBus = 0
+    closestBusDistance = sys.maxsize
+    startLocation = 0
+    bestRouteObj = returnRoute(bestRoute, allRoutes)
 
+    for stops in allStops:
+        if int(startStop) == stops.id:
+            startLocation = stops.location
+            break
+
+    for buses in bestRouteObj.buses:
+        #print("Bus " + str(buses.num) + ", at location: " + str(buses.location))
+        temp1 = abs(startLocation - buses.location)
+        temp2 = bestRouteObj.length - buses.location + startLocation
+
+        if temp1 < closestBusDistance:
+            closestBusDistance = temp1
+            closestBus = buses.num
+        if temp2 < closestBusDistance:
+            closestBusDistance = temp2
+            closestBus = buses.num
+
+    totalTripTime = estTime + closestBusDistance
+
+    if mode == "P":   
+        print("Origin: " + str(idToName(int(startStop), allStops))) 
+        print("Destination: " + str(idToName(int(endStop), allStops)))
+        print("Fastest Route: " + route.name + " (" + str(estTime) + " minutes)")  
+        print("Nearest Bus: #" + str(closestBus) + ", " + str(closestBusDistance) + " minute(s) away")
+        print("TOTAL TRIP TIME: " + str(totalTripTime))
+        return totalTripTime
+
+    return totalTripTime
+    
+
+def dashboard(distanceMatrix = [], allStops = [], allRoutes = []):
+    slowRoutes = []
+    global allBuses
+
+    print(" ----- Dashboard -----")
+    print("# Active Buses: " + str(len(allBuses)))
+
+    for routes in allRoutes:
+        time = findBestRoute()
+        print("Route")
+
+
+
+    return slowRoutes
 
 def simulate():
+    input("Welcome to the Rutgers Bus Controller. Press Enter to initialize and continue...")
     allStops = []
     allRoutes = readRoutes(allStops)
+    print("\nReading routes and stops from text files...")
+    time.sleep(.5)
+    print("\n     Initializing distances...")
     distanceMatrix = initDistanceMatrix(allRoutes)
-    printRoute("B", allRoutes)
-    while 1:
-        time.sleep(1.5)
-        start = nameToId("Lipman Hall", allStops)
-        end = nameToId("Red Oak Lane", allStops)
-        findBestRoute(start, end, distanceMatrix, allStops, allRoutes)
-        distanceMatrix = randomDistanceMatrix(distanceMatrix)
+    time.sleep(.5)
+    print("\n             Distributing buses along routes...\n")
+    distributeBuses(5, allRoutes)
+
+    start = nameToId("Student Activities Center", allStops)
+    end = nameToId("Busch Student Center", allStops)
+    findBestRoute(start, end, "", "P", distanceMatrix, allStops, allRoutes)
+    # while 1:
+    #     time.sleep(1.5)
+    #     start = nameToId("Lipman Hall", allStops)
+    #     end = nameToId("Red Oak Lane", allStops)
+    #     findBestRoute(start, end, distanceMatrix, allStops, allRoutes)
+    #     distanceMatrix = randomDistanceMatrix(distanceMatrix)
 
 
 # print(distanceMatrix)
