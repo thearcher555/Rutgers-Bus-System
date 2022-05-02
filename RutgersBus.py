@@ -96,7 +96,7 @@ def initDistanceMatrix(allRoutes = []):
     distanceMatrix = [[0]*rows for i in range(cols)]
     for x in range(rows):
         for y in range(cols):
-            distanceMatrix[x][y] = random.randrange(1,8)
+            distanceMatrix[x][y] = random.randrange(2, 5)
 
     for x in allRoutes:
         current = 0
@@ -184,7 +184,19 @@ def findRoutes(startStop, endStop, distanceMatrix, allRoutes = []):
             possibleRoutes.append(x.name)
     return possibleRoutes
 
+def moveBuses(route):
+    length = route.length
+
+    for bus in route.buses:
+        bus.location += 5
+
+        if bus.location > length:
+            bus.location = bus.location - length
+
 def addBus(route):
+    for stops in route.stops:
+        print("Stop " + str(stops.id) + " Location: " + str(stops.location))
+
     global idBus
     route.buses.append(Bus(idBus, "B", route.name))
     idBus += 1
@@ -199,6 +211,12 @@ def addBus(route):
             counter = abs(counter - route.length)
         route.buses[i].location = counter
         counter += temp
+
+    moveBuses(route)
+
+    print("bus locations")
+    for x in route.buses:
+        print(str(x.location))
 
 def distributeBuses(num, allRoutes = []):
     for routes in allRoutes:
@@ -344,7 +362,8 @@ def simulate():
             time.sleep(.5)
             sys.exit()
         elif userInput == 'C':
-            #increment buses by 5 minutes
+            for routes in allRoutes:
+                moveBuses(routes)
             print("this isn't finished yet lol")
         elif userInput == 'D':
             slowRoutes = dashboard(distanceMatrix, allStops, allRoutes)
