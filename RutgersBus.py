@@ -11,13 +11,20 @@ import time
 
 idCount = 0
 idBus = 0
+allBusses = []
 
 # status: "S" (at a stop) , "T" (in transit), "B" (taking a break)
 class Bus:
+    location = 0
     def __init__(self, num, bus_status, route):
         self.route = route
         self.num = num
         self.bus_status = str(bus_status)
+        global allBusses
+        allBusses.append(self)
+
+    def incrementLocation(self):
+        self.location += 1
 
 class Route:
     def __init__(self, name, num_buses, stops = [], buses = []):
@@ -25,6 +32,7 @@ class Route:
         self.stops = []
         self.buses = []
         self.num_buses = num_buses
+        self.length = 0
 
         for x in range(self.num_buses):
             global idBus
@@ -35,6 +43,7 @@ class Stop:
     def __init__(self, name):
         self.name = name
         self.id = 0
+        self.location = 0
 
 def readRoutes(allStops = []):
     f = open("BusRoutes.txt", "r")
@@ -80,7 +89,7 @@ def readRoutes(allStops = []):
 
     return allRoutes
 
-def initDistanceMatrix():
+def initDistanceMatrix(allRoutes = []):
     global idCount
     rows = idCount + 1
     cols = idCount + 1
@@ -88,6 +97,24 @@ def initDistanceMatrix():
     for x in range(rows):
         for y in range(cols):
             distanceMatrix[x][y] = random.randrange(1,8)
+
+    for x in allRoutes:
+        current = 0
+        index = 0
+        for i in range(int(len(x.stops)/2)):
+            
+            if i == 0:
+                x.stops[i].location = 0
+
+            else:
+                prevIndex = i - 1
+                value = distanceMatrix[x.stops[prevIndex].id][x.stops[i].id]
+                current += value
+                x.stops[i].location = current  
+            index = i
+
+        x.length = current + distanceMatrix[x.stops[index].id][x.stops[0].id]
+
     return distanceMatrix
 
 def randomDistanceMatrix(distanceMatrix):
@@ -118,15 +145,22 @@ def returnRoute(name, allRoutes = []):
         if x.name == name:
             return x
 
+def printRoute(name, allRoutes = []):
+    route = returnRoute(name, allRoutes)
+    print("Route: " + route.name + ", Length: " + str(route.length))
+    print("_______________________")
+    for x in route.stops:
+        print(x.name + ", Location; " + str(x.location))
+
 #find routes accesible from stopID
 def findRoutes(startStop, endStop, distanceMatrix, allRoutes = []):
     possibleRoutes = []
 
     for x in allRoutes:
         found = 0
-        print("checking " + x.name)
+        
         for stops in x.stops:
-            print(stops.id)
+            
             if stops.id == int(startStop) or stops.id == int(endStop):
                 found += 1
         if found >= 4:
@@ -136,68 +170,92 @@ def findRoutes(startStop, endStop, distanceMatrix, allRoutes = []):
     print(possibleRoutes)
     return possibleRoutes
 
-def findBestRoute(startStop, endStop, distanceMatrix, allStops = [], allRoutes = [], possibleRoutes = []):
+def progressBar():
+    print("[", end="")
+    print("-----",end="", flush=True)
+    time.sleep(1)
+    print("-----", end="", flush=True)
+    time.sleep(1)
+    print("-----", end="", flush=True)
+    time.sleep(1)
+    print("]")
+
+
+def findBestRoute(startStop, endStop, distanceMatrix, allStops = [], allRoutes = []):
     bestRoute = ""
     estimatedTime = sys.maxsize
+    possibleRoutes = findRoutes(startStop, endStop, distanceMatrix, allRoutes)
     for element in possibleRoutes:
         route = returnRoute(element, allRoutes)
         startIndex = 0
         endIndex = 0
-        print(element)
+        #print(element)
         
         for x in range(len(route.stops)):
             if route.stops[x].id == int(startStop):
                 startIndex = x
             if route.stops[x].id == int(endStop):
                 endIndex = x
-            if startIndex != 0 and endIndex != 0:
+            if startIndex != 0 and endIndex > startIndex:
                 break
-        print("start at: " + str(startIndex) +" end at: " + str(endIndex))
+        #print("start at: " + str(startIndex) +" end at: " + str(endIndex))
         # need to calculate "estimated time" from distance vector here
         x = startIndex
         y = endIndex
         estTime = 0
         while x != y:
-            if (x  == len(route.stops)-1):
-                nextStop = 0
-            else:
-                nextStop = x+1
+
+            # if (x  == len(route.stops)-1):
+            #     nextStop = 0
+            # else:
+            #     nextStop = x+1
 
             dm_x = route.stops[x].id
-            dm_y = route.stops[nextStop].id
+            dm_y = route.stops[x+1].id
             
             estTime += distanceMatrix[dm_x][dm_y]
-            x = nextStop
+            x += 1
+
+        print("Taking " + route.name + ": " + str(estTime) + " minutes")
+
         if estTime < estimatedTime:
             estimatedTime = estTime
             bestRoute = element
+
     print("The fastest route from " + str(idToName(int(startStop), allStops)) + " to " 
     + str(idToName(int(endStop), allStops)) + " is " + bestRoute)
 
 
-allStops = []
-allRoutes = readRoutes(allStops)
-distanceMatrix = initDistanceMatrix()
+def simulate():
+    allStops = []
+    allRoutes = readRoutes(allStops)
+    distanceMatrix = initDistanceMatrix(allRoutes)
+    printRoute("B", allRoutes)
+    while 1:
+        time.sleep(1.5)
+        start = nameToId("Lipman Hall", allStops)
+        end = nameToId("Red Oak Lane", allStops)
+        findBestRoute(start, end, distanceMatrix, allStops, allRoutes)
+        distanceMatrix = randomDistanceMatrix(distanceMatrix)
+
+
 # print(distanceMatrix)
 # distanceMatrix = randomDistanceMatrix(distanceMatrix)
 # print("////////////////////////////")
 # print(distanceMatrix)
 
-for x in allStops:
-    print("name: " + str(x.name) + "    id: " + str(x.id))
-for element in allRoutes:
-    print("STOPS IN " + element.name)
-    for x in element.stops:
-        print(x.name)
-
-possibleRoutes = findRoutes(5, 8, distanceMatrix, allRoutes)
-print(idToName(6, allStops))
-print(nameToId("The Yard", allStops))
-print("---------------------------------------------------------")
-findBestRoute(5, 8, distanceMatrix, allStops, allRoutes, possibleRoutes)
+# for x in allStops:
+#     print("name: " + str(x.name) + "    id: " + str(x.id))
+# for element in allRoutes:
+#     print("STOPS IN " + element.name)
+#     for x in element.stops:
+#         print(x.name)
 
 # possibleRoutes = findRoutes(0,5, distanceMatrix, allRoutes)
 # findBestRoute(0,5, distanceMatrix, allStops, allRoutes, possibleRoutes)
 # possibleRoutes = findRoutes(5, 0, distanceMatrix, allRoutes)
 # findBestRoute(5, 0, distanceMatrix, allStops, allRoutes, possibleRoutes)
+
+if __name__ == "__main__":
+    simulate()
     
