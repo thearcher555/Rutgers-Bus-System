@@ -202,14 +202,6 @@ def checkStop(str, allStops = []):
             break
     return bool
 
-def addBus(route):
-
-    global idBus
-    tempBus = Bus(idBus, "B", route.name)
-    tempBus.locaiton = 0
-    route.buses.append(tempBus)
-    idBus += 1
-
 def distributeBuses(num, allRoutes = []):
     for routes in allRoutes:
         length = routes.length
@@ -233,10 +225,12 @@ def speedUpRoute(route, distanceMatrix):
         distanceMatrix[route.stops[i].id][route.stops[i+1].id] = temp
         newTime += temp
 
-    temp = Bus(idBus, "B", route.name)
-    temp.locaiton = 0
-    route.buses.append(temp)
-    idBus += 1
+    if len(route.buses) < 8:
+        temp = Bus(idBus, "B", route.name)
+        temp.locaiton = 0
+        route.buses.append(temp)
+        print("              *** Adding bus to Route " + route.name + " ***")
+        idBus += 1
 
     return newTime
 
@@ -330,7 +324,7 @@ def findBestRoute(startStop, endStop, route, mode, speed, distanceMatrix, allSto
 
     if totalTripTime > 30:
         # ADD BUS IN SPEED ROUTE
-        print("The " + bestRouteObj.name + " route took " + str(totalTripTime) + " minutes to traverse. Speeding up route and adding a bus.")
+        print("*** The " + bestRouteObj.name + " route took " + str(totalTripTime) + " minutes to traverse. Speeding up route. ***")
         totalTripTime = speedUpRoute(bestRouteObj, distanceMatrix)
         return totalTripTime
 
@@ -367,7 +361,7 @@ def simulate():
     while 1:
         userInput = ""
         while 1:
-            userInput = input("\nOptions: D (See Dashboard), TR (Transport Request), C (Continue Simulation by 5), E (Exit Program)\n")
+            userInput = input("\nOptions: D (See Dashboard), TR (Transport Request), C (Continue Simulation by 5 minutes), E (Exit Program)\n")
             if userInput != 'D' and userInput != 'TR' and userInput != 'C' and userInput != 'E':
                 print("Invalid input, try again!")
                 continue
@@ -386,7 +380,7 @@ def simulate():
                     
         elif userInput == "TR":
             try:
-                origin = input("Enter your current stop:")
+                origin = input("\nEnter your current stop:")
                 if checkStop(origin, allStops) == False:
                     print("You have entered in an invalid stop. Please try again.")
                     continue
