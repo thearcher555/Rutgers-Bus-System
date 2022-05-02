@@ -280,7 +280,7 @@ def findBestRoute(startStop, endStop, route, mode, distanceMatrix, allStops = []
 
     return totalTripTime
     
-
+# this isn't done yet
 def dashboard(distanceMatrix = [], allStops = [], allRoutes = []):
     slowRoutes = []
     global allBuses
@@ -308,9 +308,37 @@ def simulate():
     print("\n             Distributing buses along routes...\n")
     distributeBuses(5, allRoutes)
 
-    start = nameToId("Student Activities Center", allStops)
-    end = nameToId("Busch Student Center", allStops)
-    findBestRoute(start, end, "", "P", distanceMatrix, allStops, allRoutes)
+    # probably put some kind of try catch here??
+    while 1:
+        userInput = ""
+        while 1:
+            userInput = input("\nOptions: D (See Dashboard), TR (Transport Request), C (Continue Simulation by 5 minutes), E (Exit Program)\n")
+            if userInput != 'D' and userInput != 'TR' and userInput != 'C' and userInput != 'E':
+                print("Invalid input, try again!")
+                continue
+            break
+        
+        if userInput == 'E':
+            print("Exiting...")
+            time.sleep(.5)
+            sys.exit()
+        elif userInput == 'C':
+            #increment buses by 5 minutes
+            print("this isn't finished yet lol")
+        elif userInput == 'D':
+            result = dashboard(distanceMatrix, allStops, allRoutes)
+        elif userInput == "TR":
+            try:
+                origin = input("Enter your current stop:")
+                destination = input("Enter your intended destination:")
+                print()
+                findBestRoute(nameToId(origin, allStops), nameToId(destination, allStops), "", "P", distanceMatrix, allStops, allRoutes)
+            except:
+                print("Invalid user input. Make sure you spelled both stops correctly!")
+
+        # start = nameToId("Student Activities Center", allStops)
+        # end = nameToId("Busch Student Center", allStops)
+        # findBestRoute(start, end, "", "P", distanceMatrix, allStops, allRoutes)
     # while 1:
     #     time.sleep(1.5)
     #     start = nameToId("Lipman Hall", allStops)
