@@ -12,6 +12,7 @@ import time
 idCount = 0
 idBus = 0
 allBuses = []
+speed = 0.25
 
 # status: "S" (at a stop) , "T" (in transit), "B" (taking a break)
 class Bus:
@@ -96,7 +97,7 @@ def initDistanceMatrix(allRoutes = []):
     distanceMatrix = [[0]*rows for i in range(cols)]
     for x in range(rows):
         for y in range(cols):
-            distanceMatrix[x][y] = random.randrange(2, 5)
+            distanceMatrix[x][y] = random.randrange(3, 6)
 
     for x in allRoutes:
         current = 0
@@ -193,30 +194,21 @@ def moveBuses(route):
         if bus.location > length:
             bus.location = bus.location - length
 
+def checkStop(str, allStops = []):
+    bool = False
+    for x in allStops:
+        if str.strip() == x.name:
+            bool = True
+            break
+    return bool
+
 def addBus(route):
-    for stops in route.stops:
-        print("Stop " + str(stops.id) + " Location: " + str(stops.location))
 
     global idBus
-    route.buses.append(Bus(idBus, "B", route.name))
+    tempBus = Bus(idBus, "B", route.name)
+    tempBus.locaiton = 0
+    route.buses.append(tempBus)
     idBus += 1
-
-    num = len(route.buses)
-    length = route.length
-    temp = int(length/num)
-    counter = 0
-
-    for i in range(num):
-        if counter > route.length:
-            counter = abs(counter - route.length)
-        route.buses[i].location = counter
-        counter += temp
-
-    moveBuses(route)
-
-    print("bus locations")
-    for x in route.buses:
-        print(str(x.location))
 
 def distributeBuses(num, allRoutes = []):
     for routes in allRoutes:
@@ -230,8 +222,27 @@ def distributeBuses(num, allRoutes = []):
             routes.buses[i].location = counter
             counter += temp
 
+def speedUpRoute(route, distanceMatrix):
+    newTime = 0
+    global speed
+    global idBus
+    speed = 0.2
+        
+    for i in range(int(len(route.stops)/2)):
+        temp = int(distanceMatrix[route.stops[i].id][route.stops[i+1].id] * (1-speed))
+        distanceMatrix[route.stops[i].id][route.stops[i+1].id] = temp
+        newTime += temp
+
+    temp = Bus(idBus, "B", route.name)
+    temp.locaiton = 0
+    route.buses.append(temp)
+    idBus += 1
+
+    return newTime
+
+
 # mode F -> just return how long it will take, mode P -> print information
-def findBestRoute(startStop, endStop, route, mode, distanceMatrix, allStops = [], allRoutes = []):
+def findBestRoute(startStop, endStop, route, mode, speed, distanceMatrix, allStops = [], allRoutes = []):
     estTime = 0
     bestRoute = ""
     bestRouteObj = 0
@@ -317,6 +328,12 @@ def findBestRoute(startStop, endStop, route, mode, distanceMatrix, allStops = []
         print("TOTAL TRIP TIME: " + str(totalTripTime))
         return totalTripTime
 
+    if totalTripTime > 30:
+        # ADD BUS IN SPEED ROUTE
+        print("The " + bestRouteObj.name + " route took " + str(totalTripTime) + " minutes to traverse. Speeding up route and adding a bus.")
+        totalTripTime = speedUpRoute(bestRouteObj, distanceMatrix)
+        return totalTripTime
+
     return totalTripTime
     
 # this isn't done yet
@@ -328,10 +345,9 @@ def dashboard(distanceMatrix = [], allStops = [], allRoutes = []):
     print("# Active Buses: " + str(len(allBuses)))
 
     for routes in allRoutes:
-        time = findBestRoute(0, int(len(routes.stops)/2), routes.name, "F", distanceMatrix, allStops, allRoutes)
-        print("Route " + routes.name + " | " + str(len(routes.buses)) + " Active Buses | Length of Route: " + str(time)) 
-        if time > 30:
-            slowRoutes.append(routes)
+        speed = 0.20
+        time = findBestRoute(0, int(len(routes.stops)/2), routes.name, "F", speed, distanceMatrix, allStops, allRoutes)
+        print("Route " + routes.name + " | " + str(len(routes.buses)) + " Active Buses | Length of Route: " + str(time) + " minutes") 
 
     return slowRoutes
 
@@ -351,7 +367,7 @@ def simulate():
     while 1:
         userInput = ""
         while 1:
-            userInput = input("\nOptions: D (See Dashboard), TR (Transport Request), C (Continue Simulation by 5 minutes), E (Exit Program)\n")
+            userInput = input("\nOptions: D (See Dashboard), TR (Transport Request), C (Continue Simulation by 5), E (Exit Program)\n")
             if userInput != 'D' and userInput != 'TR' and userInput != 'C' and userInput != 'E':
                 print("Invalid input, try again!")
                 continue
@@ -362,61 +378,26 @@ def simulate():
             time.sleep(.5)
             sys.exit()
         elif userInput == 'C':
+            distanceMatrix = randomDistanceMatrix(distanceMatrix, allRoutes)
             for routes in allRoutes:
                 moveBuses(routes)
-            print("this isn't finished yet lol")
         elif userInput == 'D':
-            slowRoutes = dashboard(distanceMatrix, allStops, allRoutes)
-            if len(slowRoutes) > 0:
-                tempInput = ""
-                while 1:
-                    tempInput = input("There are routes that take over 30 minutes to traverse. Would you like to add a bus to these routes? (Y/N)")
-                    if tempInput != "Y" and tempInput != "N":
-                        print("Invalid input, try again.")
-                        continue
-                    break
-                if tempInput == "N":
-                    continue
-                if tempInput == "Y":
-                    for routes in slowRoutes:
-                        print("Adding 1 bus to route " + routes.name)
-                        addBus(routes)
+            dashboard(distanceMatrix, allStops, allRoutes)
+                    
         elif userInput == "TR":
             try:
                 origin = input("Enter your current stop:")
+                if checkStop(origin, allStops) == False:
+                    print("You have entered in an invalid stop. Please try again.")
+                    continue
                 destination = input("Enter your intended destination:")
+                if checkStop(destination, allStops) == False:
+                    print("You have entered in an invalid stop. Please try again.")
+                    continue
                 print()
-                findBestRoute(nameToId(origin, allStops), nameToId(destination, allStops), "", "P", distanceMatrix, allStops, allRoutes)
+                findBestRoute(nameToId(origin, allStops), nameToId(destination, allStops), "", "P", 0, distanceMatrix, allStops, allRoutes)
             except:
-                print("Invalid user input. Make sure you spelled both stops correctly and that a route exists between your inputted stops.")
-
-        # start = nameToId("Student Activities Center", allStops)
-        # end = nameToId("Busch Student Center", allStops)
-        # findBestRoute(start, end, "", "P", distanceMatrix, allStops, allRoutes)
-    # while 1:
-    #     time.sleep(1.5)
-    #     start = nameToId("Lipman Hall", allStops)
-    #     end = nameToId("Red Oak Lane", allStops)
-    #     findBestRoute(start, end, distanceMatrix, allStops, allRoutes)
-    #     distanceMatrix = randomDistanceMatrix(distanceMatrix)
-
-
-# print(distanceMatrix)
-# distanceMatrix = randomDistanceMatrix(distanceMatrix)
-# print("////////////////////////////")
-# print(distanceMatrix)
-
-# for x in allStops:
-#     print("name: " + str(x.name) + "    id: " + str(x.id))
-# for element in allRoutes:
-#     print("STOPS IN " + element.name)
-#     for x in element.stops:
-#         print(x.name)
-
-# possibleRoutes = findRoutes(0,5, distanceMatrix, allRoutes)
-# findBestRoute(0,5, distanceMatrix, allStops, allRoutes, possibleRoutes)
-# possibleRoutes = findRoutes(5, 0, distanceMatrix, allRoutes)
-# findBestRoute(5, 0, distanceMatrix, allStops, allRoutes, possibleRoutes)
+                print("Invalid input. Make sure that a route exists between your inputted stops.")
 
 if __name__ == "__main__":
     simulate()
