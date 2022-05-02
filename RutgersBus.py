@@ -184,15 +184,21 @@ def findRoutes(startStop, endStop, distanceMatrix, allRoutes = []):
             possibleRoutes.append(x.name)
     return possibleRoutes
 
-def progressBar():
-    print("[", end="")
-    print("-----",end="", flush=True)
-    time.sleep(1)
-    print("-----", end="", flush=True)
-    time.sleep(1)
-    print("-----", end="", flush=True)
-    time.sleep(1)
-    print("]")
+def addBus(route):
+    global idBus
+    route.buses.append(Bus(idBus, "B", route.name))
+    idBus += 1
+
+    num = len(route.buses)
+    length = route.length
+    temp = int(length/num)
+    counter = 0
+
+    for i in range(num):
+        if counter > route.length:
+            counter = abs(counter - route.length)
+        route.buses[i].location = counter
+        counter += temp
 
 def distributeBuses(num, allRoutes = []):
     for routes in allRoutes:
@@ -208,53 +214,68 @@ def distributeBuses(num, allRoutes = []):
 
 # mode F -> just return how long it will take, mode P -> print information
 def findBestRoute(startStop, endStop, route, mode, distanceMatrix, allStops = [], allRoutes = []):
+    estTime = 0
     bestRoute = ""
-    estimatedTime = sys.maxsize
-    possibleRoutes = findRoutes(startStop, endStop, distanceMatrix, allRoutes)
-    for element in possibleRoutes:
-        route = returnRoute(element, allRoutes)
-        startIndex = 0
-        endIndex = 0
-        #print(element)
-        
-        for x in range(len(route.stops)):
-            if route.stops[x].id == int(startStop):
-                startIndex = x
-            if route.stops[x].id == int(endStop):
-                endIndex = x
-            if startIndex != 0 and endIndex > startIndex:
-                break
-        #print("start at: " + str(startIndex) +" end at: " + str(endIndex))
-        # need to calculate "estimated time" from distance vector here
-        x = startIndex
-        y = endIndex
-        estTime = 0
+    bestRouteObj = 0
+    if route != "":
+        bestRouteObj = returnRoute(route, allRoutes)
+        x = 0
+        y = int(endStop)
         while x != y:
-
-            # if (x  == len(route.stops)-1):
-            #     nextStop = 0
-            # else:
-            #     nextStop = x+1
-
-            dm_x = route.stops[x].id
-            dm_y = route.stops[x+1].id
-            
+            dm_x = bestRouteObj.stops[x].id
+            dm_y = bestRouteObj.stops[x+1].id
+                
             estTime += distanceMatrix[dm_x][dm_y]
             x += 1
+    else:
+        estimatedTime = sys.maxsize
+        possibleRoutes = findRoutes(startStop, endStop, distanceMatrix, allRoutes)
+        for element in possibleRoutes:
+            route = returnRoute(element, allRoutes)
+            startIndex = 0
+            endIndex = 0
+            
+            for x in range(len(route.stops)):
+                if route.stops[x].id == int(startStop):
+                    startIndex = x
+                if route.stops[x].id == int(endStop):
+                    endIndex = x
+                if startIndex != 0 and endIndex > startIndex:
+                    break
+            #print("start at: " + str(startIndex) +" end at: " + str(endIndex))
+            # need to calculate "estimated time" from distance vector here
+            x = startIndex
+            y = endIndex
+            while x != y:
 
-        if estTime < estimatedTime:
-            estimatedTime = estTime
-            bestRoute = element
+                # if (x  == len(route.stops)-1):
+                #     nextStop = 0
+                # else:
+                #     nextStop = x+1
+
+                dm_x = route.stops[x].id
+                dm_y = route.stops[x+1].id
+                
+                estTime += distanceMatrix[dm_x][dm_y]
+                x += 1
+
+            if estTime < estimatedTime:
+                estimatedTime = estTime
+                bestRoute = element
+        bestRouteObj = returnRoute(bestRoute, allRoutes)
 
     closestBus = 0
     closestBusDistance = sys.maxsize
     startLocation = 0
-    bestRouteObj = returnRoute(bestRoute, allRoutes)
 
-    for stops in allStops:
-        if int(startStop) == stops.id:
-            startLocation = stops.location
-            break
+    if mode == "P":
+        for stops in allStops:
+            if int(startStop) == stops.id:
+                startLocation = stops.location
+                break
+    else:
+        startLocation = 0
+
 
     for buses in bestRouteObj.buses:
         #print("Bus " + str(buses.num) + ", at location: " + str(buses.location))
@@ -289,10 +310,10 @@ def dashboard(distanceMatrix = [], allStops = [], allRoutes = []):
     print("# Active Buses: " + str(len(allBuses)))
 
     for routes in allRoutes:
-        time = findBestRoute()
-        print("Route")
-
-
+        time = findBestRoute(0, int(len(routes.stops)/2), routes.name, "F", distanceMatrix, allStops, allRoutes)
+        print("Route " + routes.name + " | " + str(len(routes.buses)) + " Active Buses | Length of Route: " + str(time)) 
+        if time > 30:
+            slowRoutes.append(routes)
 
     return slowRoutes
 
@@ -326,7 +347,21 @@ def simulate():
             #increment buses by 5 minutes
             print("this isn't finished yet lol")
         elif userInput == 'D':
-            result = dashboard(distanceMatrix, allStops, allRoutes)
+            slowRoutes = dashboard(distanceMatrix, allStops, allRoutes)
+            if len(slowRoutes) > 0:
+                tempInput = ""
+                while 1:
+                    tempInput = input("There are routes that take over 30 minutes to traverse. Would you like to add a bus to these routes? (Y/N)")
+                    if tempInput != "Y" and tempInput != "N":
+                        print("Invalid input, try again.")
+                        continue
+                    break
+                if tempInput == "N":
+                    continue
+                if tempInput == "Y":
+                    for routes in slowRoutes:
+                        print("Adding 1 bus to route " + routes.name)
+                        addBus(routes)
         elif userInput == "TR":
             try:
                 origin = input("Enter your current stop:")
@@ -334,7 +369,7 @@ def simulate():
                 print()
                 findBestRoute(nameToId(origin, allStops), nameToId(destination, allStops), "", "P", distanceMatrix, allStops, allRoutes)
             except:
-                print("Invalid user input. Make sure you spelled both stops correctly!")
+                print("Invalid user input. Make sure you spelled both stops correctly and that a route exists between your inputted stops.")
 
         # start = nameToId("Student Activities Center", allStops)
         # end = nameToId("Busch Student Center", allStops)
