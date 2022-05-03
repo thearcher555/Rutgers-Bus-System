@@ -4,6 +4,7 @@ from pickle import FALSE, TRUE
 import random
 import sys
 import time
+from tkinter import *
 #import numpy as np
 #import matplotlib.pyplot as plt
 #import tkinter as tk
@@ -45,6 +46,72 @@ class Stop:
         self.name = name
         self.id = 0
         self.location = 0
+
+
+class Display:
+    def __init__(self, root, distanceMatrix, allStops, allRoutes):
+        stopList = []
+        for x in allStops:
+            stopList.append(x.name)
+        print(stopList)
+        self.distanceMatrix = distanceMatrix;
+        self.allStops = allStops;
+        self.allRoutes = allRoutes;
+        self.lbl1=Label(root, text='Start Stop')
+        self.lbl2=Label(root, text='Destination Stop')
+        self.lbl3=Label(root, text='f')
+       #self.lbl4=Label(root, text='')
+        self.lbl5=Label(root, text='')#result title
+        self.lbl6=Label(root, text='')#result
+        self.t1=Entry(bd=3)
+        self.t2=Entry(bd=3)
+        self.t3=Entry(bd=3)
+
+        self.btn1 = Button(root, text='Get Route')
+        self.btn2 = Button(root, text='Display Dashboard')
+        self.lbl1.place(x=100, y=50)
+        self.t1.place(x=200, y=50)
+        self.lbl2.place(x=100, y=100)
+        self.t2.place(x=200, y=100)
+        self.lbl3.place(x=50, y=150)
+        self.t3.place(x=200, y=150)
+
+        self.b1= Button(root, text='Get Route', command=self.getRoute)
+        self.b2= Button(root, text='Display Dashboard', command=self.getDash())
+        self.b1.pack()
+        self.b2.pack()
+        self.b1.place(x=100, y=250)
+        self.b2.place(x=175, y=250)
+        self.lbl5.place(x=100, y=300)
+        self.lbl6.place(x=200, y=300)
+
+    def getRoute(self):
+        self.lbl5.config(text = "Fastest Route")
+        stop1 = str(self.t1.get())
+        stop2 = str(self.t2.get())
+        num1 =int(nameToId(stop1, allStops))
+        num2 =int(nameToId(stop2, allStops))
+        print(num1)
+        print(num2)
+        worked = 0
+        if (not num1 == num2) and (not num1 ==0):
+            try:
+                bestRt = findBestRoute(num1, num2, "", "P", self.distanceMatrix, self.allStops, self.allRoutes)
+                print("best Route",bestRt)
+                self.lbl6.config(text = bestRt)
+                worked = 1
+            except:
+                worked = 0
+        elif worked== 0:
+            self.lbl6.config(text = "Invalid Input\nPlease Check Inputs and Resubmit")
+    def getDash(self):
+        self.lbl5.config(text = "Dashboard")
+        output = dashboard(self.distanceMatrix, self.allStops, self.allRoutes)
+        if not output == '':
+            self.lbl6.config(text = output)
+        
+         
+
 
 def readRoutes(allStops = []):
     f = open("BusRoutes.txt", "r")
@@ -313,14 +380,16 @@ def findBestRoute(startStop, endStop, route, mode, speed, distanceMatrix, allSto
             closestBus = buses.num
 
     totalTripTime = estTime + closestBusDistance
-
+    output =''
     if mode == "P":   
         print("Origin: " + str(idToName(int(startStop), allStops))) 
         print("Destination: " + str(idToName(int(endStop), allStops)))
         print("Fastest Route: " + route.name + " (" + str(estTime) + " minutes)")  
         print("Nearest Bus: #" + str(closestBus) + ", " + str(closestBusDistance) + " minute(s) away")
         print("TOTAL TRIP TIME: " + str(totalTripTime))
-        return totalTripTime
+        output += "Origin: " + str(idToName(int(startStop), allStops)) + "\nDestination: " + str(idToName(int(endStop), allStops)) + "\nFastest Route: " + route.name + " (" + str(estTime) + " minutes)"+  "\nNearest Bus: #" + str(closestBus) + ", " + str(closestBusDistance) + " minute(s) away"+"\nTOTAL TRIP TIME: " + str(totalTripTime)
+        return output
+        # return totalTripTime
 
     if totalTripTime > 30:
         # ADD BUS IN SPEED ROUTE
@@ -334,16 +403,17 @@ def findBestRoute(startStop, endStop, route, mode, speed, distanceMatrix, allSto
 def dashboard(distanceMatrix = [], allStops = [], allRoutes = []):
     slowRoutes = []
     global allBuses
-
+    output=''
+    
     print(" ----- Dashboard -----")
     print("# Active Buses: " + str(len(allBuses)))
-
+    output += "# Active Buses: " + str(len(allBuses)) + "\n"
     for routes in allRoutes:
         speed = 0.20
         time = findBestRoute(0, int(len(routes.stops)/2), routes.name, "F", speed, distanceMatrix, allStops, allRoutes)
-        print("Route " + routes.name + " | " + str(len(routes.buses)) + " Active Buses | Length of Route: " + str(time) + " minutes") 
+        output+=str("Route " + routes.name + " | " + str(len(routes.buses)) + " Active Buses | Length of Route: " + str(time) + " minutes\n") 
 
-    return slowRoutes
+    return output
 
 def simulate():
     input("Welcome to the Rutgers Bus Controller. Press Enter to initialize and continue...")
@@ -394,5 +464,24 @@ def simulate():
                 print("Invalid input. Make sure that a route exists between your inputted stops.")
 
 if __name__ == "__main__":
-    simulate()
+    # simulate()
+    print("Welcome to the Rutgers Bus Controller.")
+    #input("Welcome to the Rutgers Bus Controller. Press Enter to initialize and continue...")
+    allStops = []
+    allRoutes = readRoutes(allStops)
+    print("\nReading routes and stops from text files...")
+    time.sleep(.5)
+    print("\n     Initializing distances...")
+    distanceMatrix = initDistanceMatrix(allRoutes)
+    time.sleep(.5)
+    print("\n             Distributing buses along routes...\n")
+    distributeBuses(5, allRoutes)
+
+    root = Tk()
+    root.title = ('Bus Route Selector')
+    disp = Display(root, distanceMatrix, allStops, allRoutes)
+   
+    root.geometry("500x500")
+    root.mainloop()
+    
     
