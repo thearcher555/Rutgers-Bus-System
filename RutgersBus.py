@@ -50,38 +50,41 @@ class Stop:
 
 class Display:
     def __init__(self, root, distanceMatrix, allStops, allRoutes):
-        stopList = []
+        self.stopList = []
         for x in allStops:
-            stopList.append(x.name)
-        print(stopList)
-        self.distanceMatrix = distanceMatrix;
-        self.allStops = allStops;
-        self.allRoutes = allRoutes;
+            self.stopList.append(x.name)
+        #print(stopList)
+        self.distanceMatrix = distanceMatrix
+        self.allStops = allStops
+        self.allRoutes = allRoutes
         self.lbl1=Label(root, text='Start Stop')
         self.lbl2=Label(root, text='Destination Stop')
-        self.lbl3=Label(root, text='f')
+        #self.lbl3=Label(root, text='f')
        #self.lbl4=Label(root, text='')
         self.lbl5=Label(root, text='')#result title
         self.lbl6=Label(root, text='')#result
         self.t1=Entry(bd=3)
         self.t2=Entry(bd=3)
-        self.t3=Entry(bd=3)
+        #self.t3=Entry(bd=3)
 
-        self.btn1 = Button(root, text='Get Route')
-        self.btn2 = Button(root, text='Display Dashboard')
+        # self.btn1 = Button(root, text='Get Route')
+        # self.btn2 = Button(root, text='Display Dashboard')
         self.lbl1.place(x=100, y=50)
         self.t1.place(x=200, y=50)
         self.lbl2.place(x=100, y=100)
         self.t2.place(x=200, y=100)
-        self.lbl3.place(x=50, y=150)
-        self.t3.place(x=200, y=150)
+        #self.lbl3.place(x=50, y=150)
+        #self.t3.place(x=200, y=150)
 
         self.b1= Button(root, text='Get Route', command=self.getRoute)
-        self.b2= Button(root, text='Display Dashboard', command=self.getDash())
+        self.b2= Button(root, text='Display Dashboard + Optimize Routes', command=self.getDash)
+        self.b3= Button(root, text='Increment Time (5 Minutes)', command=self.kawamami)
         self.b1.pack()
         self.b2.pack()
+        self.b3.pack()
         self.b1.place(x=100, y=250)
         self.b2.place(x=175, y=250)
+        self.b3.place(x=400, y=250)
         self.lbl5.place(x=100, y=300)
         self.lbl6.place(x=200, y=300)
 
@@ -89,26 +92,28 @@ class Display:
         self.lbl5.config(text = "Fastest Route")
         stop1 = str(self.t1.get())
         stop2 = str(self.t2.get())
-        num1 =int(nameToId(stop1, allStops))
-        num2 =int(nameToId(stop2, allStops))
-        print(num1)
-        print(num2)
-        worked = 0
-        if (not num1 == num2) and (not num1 ==0):
-            try:
-                bestRt = findBestRoute(num1, num2, "", "P", self.distanceMatrix, self.allStops, self.allRoutes)
-                print("best Route",bestRt)
-                self.lbl6.config(text = bestRt)
-                worked = 1
-            except:
-                worked = 0
-        elif worked== 0:
+        try:
+            if checkStop(stop1, allStops) == False:
+                raise Exception("You have entered in an invalid stop. Please try again.")
+                    
+            if checkStop(stop2, allStops) == False:
+                raise Exception("You have entered in an invalid stop. Please try again.")
+
+            bestRt = findBestRoute(nameToId(stop1, allStops), nameToId(stop2, allStops), "", "P", 0.2, self.distanceMatrix, self.allStops, self.allRoutes)
+            self.lbl6.config(text = bestRt)
+        except:
             self.lbl6.config(text = "Invalid Input\nPlease Check Inputs and Resubmit")
+
     def getDash(self):
-        self.lbl5.config(text = "Dashboard")
+        self.lbl6.config(text = "Dashboard")
         output = dashboard(self.distanceMatrix, self.allStops, self.allRoutes)
         if not output == '':
             self.lbl6.config(text = output)
+
+    def kawamami(self):
+        self.distanceMatrix = randomDistanceMatrix(distanceMatrix, allRoutes)
+        for routes in allRoutes:
+            moveBuses(routes)
         
          
 
@@ -261,10 +266,11 @@ def moveBuses(route):
         if bus.location > length:
             bus.location = bus.location - length
 
-def checkStop(str, allStops = []):
+def checkStop(input, allStops = []):
     bool = False
     for x in allStops:
-        if str.strip() == x.name:
+        #print("comparing " + str(input) + " to " + x.name)
+        if input == x.name:
             bool = True
             break
     return bool
@@ -388,6 +394,7 @@ def findBestRoute(startStop, endStop, route, mode, speed, distanceMatrix, allSto
         print("Nearest Bus: #" + str(closestBus) + ", " + str(closestBusDistance) + " minute(s) away")
         print("TOTAL TRIP TIME: " + str(totalTripTime))
         output += "Origin: " + str(idToName(int(startStop), allStops)) + "\nDestination: " + str(idToName(int(endStop), allStops)) + "\nFastest Route: " + route.name + " (" + str(estTime) + " minutes)"+  "\nNearest Bus: #" + str(closestBus) + ", " + str(closestBusDistance) + " minute(s) away"+"\nTOTAL TRIP TIME: " + str(totalTripTime)
+        print(output)
         return output
         # return totalTripTime
 
@@ -404,9 +411,8 @@ def dashboard(distanceMatrix = [], allStops = [], allRoutes = []):
     slowRoutes = []
     global allBuses
     output=''
-    
-    print(" ----- Dashboard -----")
-    print("# Active Buses: " + str(len(allBuses)))
+    # print(" ----- Dashboard -----")
+    # print("# Active Buses: " + str(len(allBuses)))
     output += "# Active Buses: " + str(len(allBuses)) + "\n"
     for routes in allRoutes:
         speed = 0.20
@@ -415,73 +421,78 @@ def dashboard(distanceMatrix = [], allStops = [], allRoutes = []):
 
     return output
 
-def simulate():
-    input("Welcome to the Rutgers Bus Controller. Press Enter to initialize and continue...")
-    allStops = []
-    allRoutes = readRoutes(allStops)
-    print("\nReading routes and stops from text files...")
-    time.sleep(.5)
-    print("\n     Initializing distances...")
-    distanceMatrix = initDistanceMatrix(allRoutes)
-    time.sleep(.5)
-    print("\n             Distributing buses along routes...\n")
-    distributeBuses(5, allRoutes)
+# def simulate():
+#     input("Welcome to the Rutgers Bus Controller. Press Enter to initialize and continue...")
+#     allStops = []
+#     allRoutes = readRoutes(allStops)
+#     print("\nReading routes and stops from text files...")
+#     time.sleep(.5)
+#     print("\n     Initializing distances...")
+#     distanceMatrix = initDistanceMatrix(allRoutes)
+#     time.sleep(.5)
+#     print("\n             Distributing buses along routes...\n")
+#     distributeBuses(5, allRoutes)
 
-    # probably put some kind of try catch here??
-    while 1:
-        userInput = ""
-        while 1:
-            userInput = input("\nOptions: D (See Dashboard), TR (Transport Request), C (Continue Simulation by 5 minutes), E (Exit Program)\n")
-            if userInput != 'D' and userInput != 'TR' and userInput != 'C' and userInput != 'E':
-                print("Invalid input, try again!")
-                continue
-            break
+#     # probably put some kind of try catch here??
+#     while 1:
+#         userInput = ""
+#         while 1:
+#             userInput = input("\nOptions: D (See Dashboard), TR (Transport Request), C (Continue Simulation by 5 minutes), E (Exit Program)\n")
+#             if userInput != 'D' and userInput != 'TR' and userInput != 'C' and userInput != 'E':
+#                 print("Invalid input, try again!")
+#                 continue
+#             break
         
-        if userInput == 'E':
-            print("Exiting...")
-            time.sleep(.5)
-            sys.exit()
-        elif userInput == 'C':
-            distanceMatrix = randomDistanceMatrix(distanceMatrix, allRoutes)
-            for routes in allRoutes:
-                moveBuses(routes)
-        elif userInput == 'D':
-            dashboard(distanceMatrix, allStops, allRoutes)
+#         if userInput == 'E':
+#             print("Exiting...")
+#             time.sleep(.5)
+#             sys.exit()
+#         elif userInput == 'C':
+#             distanceMatrix = randomDistanceMatrix(distanceMatrix, allRoutes)
+#             for routes in allRoutes:
+#                 moveBuses(routes)
+#         elif userInput == 'D':
+#             dashboard(distanceMatrix, allStops, allRoutes)
                     
-        elif userInput == "TR":
-            try:
-                origin = input("\nEnter your current stop:")
-                if checkStop(origin, allStops) == False:
-                    print("You have entered in an invalid stop. Please try again.")
-                    continue
-                destination = input("Enter your intended destination:")
-                if checkStop(destination, allStops) == False:
-                    print("You have entered in an invalid stop. Please try again.")
-                    continue
-                print()
-                findBestRoute(nameToId(origin, allStops), nameToId(destination, allStops), "", "P", 0, distanceMatrix, allStops, allRoutes)
-            except:
-                print("Invalid input. Make sure that a route exists between your inputted stops.")
+#         elif userInput == "TR":
+#             try:
+#                 origin = input("\nEnter your current stop:")
+#                 if checkStop(origin, allStops) == False:
+#                     print("You have entered in an invalid stop. Please try again.")
+#                     continue
+#                 destination = input("Enter your intended destination:")
+#                 if checkStop(destination, allStops) == False:
+#                     print("You have entered in an invalid stop. Please try again.")
+#                     continue
+#                 print()
+#                 findBestRoute(nameToId(origin, allStops), nameToId(destination, allStops), "", "P", 0, distanceMatrix, allStops, allRoutes)
+#             except:
+#                 print("Invalid input. Make sure that a route exists between your inputted stops.")
 
 if __name__ == "__main__":
     # simulate()
-    print("Welcome to the Rutgers Bus Controller.")
-    #input("Welcome to the Rutgers Bus Controller. Press Enter to initialize and continue...")
+    # print("Welcome to the Rutgers Bus Controller.")
+    # #input("Welcome to the Rutgers Bus Controller. Press Enter to initialize and continue...")
+    # allStops = []
+    # allRoutes = readRoutes(allStops)
+    # print("\nReading routes and stops from text files...")
+    # time.sleep(.5)
+    # print("\n     Initializing distances...")
+    # distanceMatrix = initDistanceMatrix(allRoutes)
+    # time.sleep(.5)
+    # print("\n             Distributing buses along routes...\n")
+    # distributeBuses(5, allRoutes)
+
     allStops = []
     allRoutes = readRoutes(allStops)
-    print("\nReading routes and stops from text files...")
-    time.sleep(.5)
-    print("\n     Initializing distances...")
     distanceMatrix = initDistanceMatrix(allRoutes)
-    time.sleep(.5)
-    print("\n             Distributing buses along routes...\n")
     distributeBuses(5, allRoutes)
 
     root = Tk()
     root.title = ('Bus Route Selector')
     disp = Display(root, distanceMatrix, allStops, allRoutes)
    
-    root.geometry("500x500")
+    root.geometry("600x600")
     root.mainloop()
     
     
